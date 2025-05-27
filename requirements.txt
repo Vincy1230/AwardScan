@@ -1,6 +1,9 @@
 tencentcloud-sdk-python-common
 tencentcloud-sdk-python-lke
 requests<2.30.0
+python-dotenv
+pydantic
 langchain
 langchain-openai
 fastapi[uvicorn]
+python-multipart
