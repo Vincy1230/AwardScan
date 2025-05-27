@@ -1,11 +1,18 @@
 from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.openapi.docs import get_swagger_ui_html
+from fastapi.openapi.utils import get_openapi
 from pydantic import BaseModel
 import os
 from api_service import convert_to_markdown
 from llm_service import extract_award_info
 import tempfile
 
-app = FastAPI(title="获奖信息提取服务")
+app = FastAPI(title="获奖信息提取服务", docs_url=None)
+
+# 挂载本地 swagger ui 静态文件
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 ALLOWED_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.pdf'}
 MAX_FILE_SIZE = 6 * 1024 * 1024  # 6MB in bytes
@@ -66,6 +73,32 @@ async def extract_info(file: UploadFile = File(...)):
             os.unlink(temp_file_path)
 
 
+@app.get("/docs", include_in_schema=False)
+async def custom_swagger_ui_html():
+    return get_swagger_ui_html(
+        openapi_url="/openapi.json",
+        title="My API Docs",
+        swagger_js_url="/static/swagger-ui-bundle.js",
+        swagger_css_url="/static/swagger-ui.css",
+    )
+
+
+@app.get("/openapi.json", include_in_schema=False)
+async def custom_openapi():
+    return get_openapi(
+        title=app.title,
+        version=app.version,
+        routes=app.routes,
+    )
+
+
+if os.path.exists("./favicon.ico"):
+
+    @app.get("/favicon.ico")
+    async def get_favicon():
+        return FileResponse("./favicon.ico")
+
+
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="localhost", port=8114)
